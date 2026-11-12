@@ -8,11 +8,11 @@ A locally running, AI-assisted question answering system. Users can ask question
 
 | Member | Role |
 |---|---|
-| Hasan | Group leader |
+| Hasan Mert Yıldırım | Group leader |
 | Melisa Zeynep Sarıgüzel | Developer |
-| Gürkan | Developer |
-| Celal | Developer |
-| Elif | Developer |
+| Gürkan Zıba| Developer |
+| Ahmet Celal Koç | Developer |
+| Elif Başak Yılmaz | Developer |
 
 ## Features (planned over 4 weeks)
 
