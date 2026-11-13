@@ -1,0 +1,334 @@
+
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PDF AI Search | Document Intelligence</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet"
+        href="{{ url_for('static', filename='style.css') }}">
+  <script defer src="{{ url_for('static', filename='app.js') }}"></script>
+</head>
+
+<body data-has-results="{{ 'true' if results else 'false' }}">
+  <div class="ambient ambient-one"></div>
+  <div class="ambient ambient-two"></div>
+
+  <div class="app-shell">
+
+    <header class="navbar">
+      <a class="brand" href="{{ url_for('index') }}">
+        <span class="brand-logo">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M12 2L14.8 9.2L22 12L14.8 14.8L12 22L9.2 14.8L2 12L9.2 9.2Z"
+                  fill="currentColor"/>
+          </svg>
+        </span>
+        <span class="brand-name">doc<span>mind</span></span>
+        <span class="brand-version">BETA</span>
+      </a>
+
+      <div class="nav-right">
+        <span class="status-pill">
+          <span class="status-dot"></span>
+          Local Workspace
+        </span>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div>
+          <div class="eyebrow">
+            <span class="eyebrow-icon">✦</span>
+            INTELLIGENT DOCUMENT WORKSPACE
+          </div>
+
+          <h1>
+            Belgelerinle çalışmanın
+            <span class="gradient-text">akıllı yolu.</span>
+          </h1>
+
+          <p>
+            PDF dosyalarını yükle, doğal dilde arama yap
+            ve en alakalı bilgilere saniyeler içinde ulaş.
+          </p>
+        </div>
+      </section>
+
+      {% if error %}
+      <div class="alert alert-error" role="alert">
+        <span>!</span>
+        {{ error }}
+      </div>
+      {% endif %}
+
+      {% if uploaded %}
+      <div class="alert alert-success" role="status">
+        <span>✓</span>
+        {{ uploaded }} PDF başarıyla yüklendi. Arama index'i güncellendi.
+      </div>
+      {% endif %}
+
+      <!-- UPLOAD PANEL -->
+      <section class="panel upload-panel">
+        <div class="panel-heading">
+          <div class="heading-left">
+            <div class="heading-icon purple-icon">
+              <svg viewBox="0 0 24 24" fill="none"
+                   stroke="currentColor" stroke-width="1.8"
+                   stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 16V4M7 9l5-5 5 5"/>
+                <path d="M4 16v3a1 1 0 001 1h14a1 1 0 001-1v-3"/>
+              </svg>
+            </div>
+            <div>
+              <h2>Doküman Yükle</h2>
+              <p>Bilgi kaynaklarını çalışma alanına ekle.</p>
+            </div>
+          </div>
+          <span class="panel-tag">01 / UPLOAD</span>
+        </div>
+
+        <form id="uploadForm"
+              action="{{ url_for('upload') }}"
+              method="POST"
+              enctype="multipart/form-data">
+
+          <div class="dropzone" id="dropzone" tabindex="0"
+               role="button" aria-label="PDF dosyası seç">
+
+            <div class="dropzone-icon">
+              <svg viewBox="0 0 24 24" fill="none"
+                   stroke="currentColor" stroke-width="1.6"
+                   stroke-linecap="round" stroke-linejoin="round">
+                <path d="M7 18a5 5 0 01-.9-9.9A6 6 0 0117.4 8a5 5 0 01.6 10"/>
+                <path d="M12 20V11m-4 4 4-4 4 4"/>
+              </svg>
+            </div>
+
+            <h3>Dosyalarını buraya sürükle ve bırak</h3>
+            <p>veya bilgisayarından PDF dosyalarını seç</p>
+
+            <input type="file"
+                   name="files"
+                   id="pdfFiles"
+                   accept=".pdf,application/pdf"
+                   multiple
+                   hidden>
+
+            <button type="button" class="choose-btn" id="chooseFiles">
+              <svg viewBox="0 0 24 24" fill="none"
+                   stroke="currentColor" stroke-width="2">
+                <path d="M12 5v14M5 12h14"/>
+              </svg>
+              Dosya Seç
+            </button>
+
+            <div class="dropzone-hint">
+              PDF formatı · Birden fazla dosya desteklenir
+            </div>
+          </div>
+
+          <div id="fileList" class="file-list" aria-live="polite"></div>
+          <p id="fileStatus" class="file-status" role="status"></p>
+
+          <div class="upload-footer">
+            <div class="upload-info">
+              <span class="info-icon">ⓘ</span>
+              Yüklenen PDF'ler otomatik olarak index'lenir.
+            </div>
+
+            <button class="primary-btn upload-btn"
+                    id="uploadButton" type="submit">
+              Dosyaları Yükle
+              <span>↗</span>
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <!-- SEARCH WORKSPACE -->
+      <section class="panel search-panel">
+
+        <div class="panel-heading search-heading">
+          <div class="heading-left">
+            <div class="heading-icon blue-icon">
+              <svg viewBox="0 0 24 24" fill="none"
+                   stroke="currentColor" stroke-width="1.8"
+                   stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="10.8" cy="10.8" r="6.8"/>
+                <path d="M16 16l5 5"/>
+              </svg>
+            </div>
+            <div>
+              <h2>Document Explorer</h2>
+              <p>Belgelerinde sorular sor, ilgili metinleri keşfet.</p>
+            </div>
+          </div>
+
+          <span class="panel-tag">02 / EXPLORE</span>
+        </div>
+
+        <div class="workspace-body">
+
+          <div class="workspace-intro">
+            <div class="intro-sparkle">✦</div>
+            <h3>Ne öğrenmek istersin?</h3>
+            <p>
+              Yüklediğin dokümanların içeriğinde arama yapmak
+              için bir soru yaz.
+            </p>
+          </div>
+
+          {% if not results %}
+          <div class="suggestions">
+            <span class="suggestion-label">Örnek sorular</span>
+
+            <div class="suggestion-list">
+              <button type="button" class="suggestion"
+                      data-question="Büyük dil modeli nedir?">
+                Büyük dil modeli nedir? <span>↗</span>
+              </button>
+
+              <button type="button" class="suggestion"
+                      data-question="Dokümanda yapay zekâ nasıl açıklanıyor?">
+                Yapay zekâ nasıl açıklanıyor? <span>↗</span>
+              </button>
+
+              <button type="button" class="suggestion"
+                      data-question="Bu belgenin temel konuları nelerdir?">
+                Belgenin temel konuları <span>↗</span>
+              </button>
+            </div>
+          </div>
+          {% endif %}
+
+          <form id="searchForm"
+                action="{{ url_for('index') }}"
+                method="POST">
+
+            <div class="composer">
+              <textarea name="question" id="question"
+                        rows="3"
+                        placeholder="Dokümanların hakkında bir soru sor..."
+                        required>{{ question }}</textarea>
+
+              <div class="composer-bottom">
+                <span class="composer-hint">
+                  ✧ Semantic retrieval · Top 3 sonuç
+                </span>
+
+                <button class="search-btn"
+                        type="submit" id="searchButton">
+                  Ara
+
+                  <svg viewBox="0 0 24 24" fill="none"
+                       stroke="currentColor" stroke-width="2"
+                       stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M5 12h14m-6-6 6 6-6 6"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </form>
+
+          <!-- SEARCH RESULTS -->
+          <div class="results-section" id="results">
+
+            <div class="results-heading">
+              <div>
+                <span class="section-eyebrow">SEARCH RESULTS</span>
+                <h3>Arama Sonuçları</h3>
+              </div>
+
+              <span class="results-count">
+                {% if results %}
+                  {{ results|length }} sonuç
+                {% else %}
+                  Henüz arama yapılmadı
+                {% endif %}
+              </span>
+            </div>
+
+            {% if results %}
+            <div class="result-list">
+
+              {% for result in results %}
+              <article class="result-card">
+
+                <div class="result-card-top">
+                  <div class="result-identity">
+                    <div class="pdf-icon">PDF</div>
+
+                    <div>
+                      <span class="result-name">{{ result.source }}</span>
+                      <div class="result-location">
+                        Sayfa {{ result.page }} · Sonuç #{{ loop.index }}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="match-badge">
+                    <span class="match-dot"></span>
+                    Skor {{ "%.3f"|format(result.score) }}
+                  </div>
+                </div>
+
+                <div class="result-content">
+                  <div class="quote-mark">“</div>
+                  <p>{{ result.text }}</p>
+                </div>
+
+                <div class="result-card-bottom">
+                  <span>
+                    <span class="result-small-icon">◈</span>
+                    Semantic similarity
+                  </span>
+
+                  <div class="score-track">
+                    <div class="score-fill"
+                         style="--score: {{ (result.score * 100) | round(0) }}%">
+                    </div>
+                  </div>
+                </div>
+
+              </article>
+              {% endfor %}
+
+            </div>
+            {% else %}
+            <div class="empty-results">
+              <div class="empty-orbit">
+                <div class="empty-orbit-inner">⌕</div>
+              </div>
+
+              <h4>Henüz keşfedilecek bir sonuç yok</h4>
+
+              <p>
+                Yukarıdaki arama kutusuna bir soru yaz.
+                En alakalı PDF parçalarını kaynak ve sayfa
+                bilgileriyle burada göreceksin.
+              </p>
+            </div>
+            {% endif %}
+
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <footer>
+      <span>© 2026 Docmind · Software Development with Standards</span>
+      <span>Powered by Semantic Retrieval · ISO/IEC 25010</span>
+    </footer>
+
+  </div>
+</body>
+</html>
