@@ -21,43 +21,34 @@ def test_home_page(client):
 
 
 def test_empty_question(client, monkeypatch):
-    def fake_search(*args, **kwargs):
-        pytest.fail("Boş soruda search çağrılmamalı")
+    def unexpected_answer(question):
+        pytest.fail("Boş soruda answer_from_docs çağrılmamalı")
 
-    monkeypatch.setattr(app_module, "search", fake_search)
-
+    monkeypatch.setattr(app_module, "answer_from_docs", unexpected_answer)
     response = client.post("/", data={"question": "  "})
 
     assert response.status_code == 200
     assert "Lütfen bir soru girin." in response.get_data(as_text=True)
 
 
-def test_search_results(client, monkeypatch):
-    def fake_search(question, top_k=3):
+def test_answer_and_sources(client, monkeypatch):
+    def fake_answer(question):
         assert question == "Büyük dil modeli nedir?"
-        assert top_k == 3
-        return [
-            {
-                "text": "LLM, büyük dil modeli anlamına gelir.",
-                "source": "example.pdf",
-                "page": 7,
-                "score": 0.95,
-            }
-        ]
+        return {
+            "answer": "LLM, büyük dil modeli anlamına gelir.",
+            "sources": [{"source": "example.pdf", "page": 7}],
+        }
 
-    monkeypatch.setattr(app_module, "search", fake_search)
-
-    response = client.post(
-        "/",
-        data={"question": "Büyük dil modeli nedir?"},
-    )
-
-    html = response.get_data(as_text=True)
+    monkeypatch.setattr(app_module, "answer_from_docs", fake_answer)
+    response = client.post("/", data={"question": "Büyük dil modeli nedir?"})
 
     assert response.status_code == 200
-    assert "example.pdf" in html
-    assert "0.95" in html
-    assert "LLM, büyük dil modeli" in html
+    html = response.get_data(as_text=True)
+    assert "LLM, büyük dil modeli anlamına gelir." in html
+    assert "example.pdf – sayfa 7" in html
+    assert html.index("LLM, büyük dil modeli anlamına gelir.") < html.index(
+        "example.pdf – sayfa 7"
+    )
 
 
 def test_reject_non_pdf(client, monkeypatch, tmp_path):
