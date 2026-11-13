@@ -25,9 +25,9 @@ def index():
             error = "Lütfen bir soru girin."
         else:
             try:
-                result = answer_from_docs(question)
+                result = answer_from_docs(question, include_matches=True)
                 answer = result["answer"]
-                results = result["sources"]
+                results = result.get("matches", [])
             except Exception:
                 app.logger.exception("PDF cevabı üretilemedi")
                 error = "Cevap üretilemedi. PDF indeksini kontrol edin."

@@ -32,11 +32,20 @@ def test_empty_question(client, monkeypatch):
 
 
 def test_answer_and_sources(client, monkeypatch):
-    def fake_answer(question):
+    def fake_answer(question, *, include_matches=False):
         assert question == "Büyük dil modeli nedir?"
+        assert include_matches is True
         return {
             "answer": "LLM, büyük dil modeli anlamına gelir.",
             "sources": [{"source": "example.pdf", "page": 7}],
+            "matches": [
+                {
+                    "source": "example.pdf",
+                    "page": 7,
+                    "text": "PDF'ten alınan örnek metin.",
+                    "score": 0.95,
+                }
+            ],
         }
 
     monkeypatch.setattr(app_module, "answer_from_docs", fake_answer)
@@ -49,6 +58,8 @@ def test_answer_and_sources(client, monkeypatch):
     assert html.index("LLM, büyük dil modeli anlamına gelir.") < html.index(
         "example.pdf – sayfa 7"
     )
+    assert "Skor 0.950" in html
+    assert "PDF&#39;ten alınan örnek metin." in html
 
 
 def test_reject_non_pdf(client, monkeypatch, tmp_path):

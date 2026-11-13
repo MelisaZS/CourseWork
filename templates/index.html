@@ -240,27 +240,92 @@
 
           <!-- SEARCH RESULTS -->
           <div class="results-section" id="results">
-            {% if answer is defined and answer %}
+              {% if answer is defined and answer %}
             <div class="results-heading">
               <h3>Cevap</h3>
             </div>
             <article class="result-card">
-              <p style="white-space: pre-wrap">{{ answer }}</p>
+              <div class="result-content">
+                <p style="white-space: pre-wrap">{{ answer }}</p>
+              </div>
             </article>
+            {% endif %}
+            <div class="results-heading">
+              <div>
+                <span class="section-eyebrow">SEARCH RESULTS</span>
+                <h3>Kaynaklar</h3>
+              </div>
+
+              <span class="results-count">
+                {% if results %}
+                  {{ results|length }} sonuç
+                {% else %}
+                  Henüz arama yapılmadı
+                {% endif %}
+              </span>
+            </div>
 
             {% if results %}
-            <h4>Kaynaklar</h4>
-            <ul>
+            <div class="result-list">
+
               {% for result in results %}
-              <li>{{ result.source }} – sayfa {{ result.page }}</li>
+              <article class="result-card">
+
+                <div class="result-card-top">
+                  <div class="result-identity">
+                    <div class="pdf-icon">PDF</div>
+
+                    <div>
+                      <div class="result-location">
+                          {{ result.source }} – sayfa {{ result.page }}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="match-badge">
+                    <span class="match-dot"></span>
+                    Skor {{ "%.3f"|format(result.score) }}
+                  </div>
+                </div>
+
+                <div class="result-content">
+                  <div class="quote-mark">“</div>
+                  <p>{{ result.text }}</p>
+                </div>
+
+                <div class="result-card-bottom">
+                  <span>
+                    <span class="result-small-icon">◈</span>
+                    Semantic similarity
+                  </span>
+
+                  <div class="score-track">
+                    <div class="score-fill"
+                         style="--score: {{ (result.score * 100) | round(0) }}%">
+                    </div>
+                  </div>
+                </div>
+
+              </article>
               {% endfor %}
-            </ul>
-            {% endif %}
-            {% else %}
+
+            </div>
+            {% elif not answer %}
             <div class="empty-results">
-              <p>PDF’lerine bir soru sor; cevap ve kaynaklar burada görünecek.</p>
+              <div class="empty-orbit">
+                <div class="empty-orbit-inner">⌕</div>
+              </div>
+
+              <h4>Henüz keşfedilecek bir sonuç yok</h4>
+
+              <p>
+                Yukarıdaki arama kutusuna bir soru yaz.
+                En alakalı PDF parçalarını kaynak ve sayfa
+                bilgileriyle burada göreceksin.
+              </p>
             </div>
             {% endif %}
+
           </div>
         </div>
       </section>
