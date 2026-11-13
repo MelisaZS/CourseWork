@@ -240,11 +240,20 @@
 
           <!-- SEARCH RESULTS -->
           <div class="results-section" id="results">
-
+              {% if answer is defined and answer %}
+            <div class="results-heading">
+              <h3>Cevap</h3>
+            </div>
+            <article class="result-card">
+              <div class="result-content">
+                <p style="white-space: pre-wrap">{{ answer }}</p>
+              </div>
+            </article>
+            {% endif %}
             <div class="results-heading">
               <div>
                 <span class="section-eyebrow">SEARCH RESULTS</span>
-                <h3>Arama Sonuçları</h3>
+                <h3>Kaynaklar</h3>
               </div>
 
               <span class="results-count">
@@ -267,9 +276,8 @@
                     <div class="pdf-icon">PDF</div>
 
                     <div>
-                      <span class="result-name">{{ result.source }}</span>
                       <div class="result-location">
-                        Sayfa {{ result.page }} · Sonuç #{{ loop.index }}
+                          {{ result.source }} – sayfa {{ result.page }}
                       </div>
                     </div>
                   </div>
@@ -302,7 +310,7 @@
               {% endfor %}
 
             </div>
-            {% else %}
+            {% elif not answer %}
             <div class="empty-results">
               <div class="empty-orbit">
                 <div class="empty-orbit-inner">⌕</div>

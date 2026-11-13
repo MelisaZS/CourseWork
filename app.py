@@ -5,8 +5,8 @@ from flask import Flask, redirect, render_template, request, url_for
 from werkzeug.utils import secure_filename
 
 import config
+from rag.answer import answer_from_docs
 from rag.indexer import rebuild_index
-from rag.retriever import search
 
 app = Flask(__name__)
 
@@ -14,6 +14,7 @@ app = Flask(__name__)
 @app.route("/", methods=["GET", "POST"])
 def index():
     question = ""
+    answer = None
     results = []
     error = None
 
@@ -24,18 +25,18 @@ def index():
             error = "Lütfen bir soru girin."
         else:
             try:
-                results = search(question, top_k=3)
-                if not results:
-                    error = "Soruyla ilgili bir sonuç bulunamadı."
+                result = answer_from_docs(question, include_matches=True)
+                answer = result["answer"]
+                results = result.get("matches", [])
             except Exception:
-                app.logger.exception("PDF araması başarısız")
-                error = "Arama yapılamadı. PDF index'ini kontrol edin."
+                app.logger.exception("PDF cevabı üretilemedi")
+                error = "Cevap üretilemedi. PDF indeksini kontrol edin."
 
     uploaded = request.args.get("uploaded", default=0, type=int)
-
     return render_template(
         "index.html",
         question=question,
+        answer=answer,
         results=results,
         error=error,
         uploaded=uploaded,
