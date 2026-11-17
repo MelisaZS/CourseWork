@@ -3,6 +3,7 @@ sentence-transformers>=2.7
 numpy>=1.26
 pypdf>=4.0
 requests>=2.31
+ddgs>=9.0
 faker>=24.0
 pytest>=8.0
 ruff>=0.4

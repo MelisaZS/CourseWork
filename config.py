@@ -23,3 +23,7 @@ TOP_K = 3
 # Local LLM (Ollama)
 OLLAMA_URL = "http://localhost:11434"
 OLLAMA_MODEL = "llama3.2"
+
+# Web search (DuckDuckGo)
+WEB_MAX_RESULTS = 3
+WEB_REGION = "tr-tr"
