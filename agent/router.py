@@ -1,6 +1,8 @@
 
 """LLM-based question router for database, PDF and web sources."""
 
+import re
+
 from agent.llm import ask_llm
 from agent.web_search import answer_from_web
 from db.sql_agent import answer_from_db
@@ -54,12 +56,9 @@ def route(question):
         return "doc"
 
     llm_response = ask_llm(build_route_prompt(question))
-    selected_route = llm_response.strip().lower()
 
-    if selected_route in VALID_ROUTES:
-        return selected_route
-
-    return "doc"
+    match = re.search(r"\b(db|doc|web)\b", llm_response.lower())
+    return match.group(1) if match else "doc"
 
 
 def answer(question):

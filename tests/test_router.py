@@ -108,7 +108,7 @@ def test_answer_routes_to_web(monkeypatch):
     def fake_web(question):
         assert question == "Bugün dolar kaç TL?"
         return {
-            "answer": "Güncel kur bilgisi.",
+            "answer": "Güncel arama bilgisi.",
             "sources": ["https://example.com"],
         }
 
@@ -117,5 +117,33 @@ def test_answer_routes_to_web(monkeypatch):
     result = router.answer("Bugün dolar kaç TL?")
 
     assert result["route"] == "web"
-    assert result["answer"] == "Güncel kur bilgisi."
+    assert result["answer"] == "Güncel arama bilgisi."
     assert result["sources"] == ["https://example.com"]
+
+
+def test_route_db_with_period(monkeypatch):
+    monkeypatch.setattr(router, "ask_llm", lambda prompt: "db.")
+
+    assert router.route("Kaç müşterimiz var?") == "db"
+
+
+def test_route_web_with_prefix(monkeypatch):
+    monkeypatch.setattr(router, "ask_llm", lambda prompt: "Rota: web")
+
+    assert router.route("Bugün dolar kaç TL?") == "web"
+
+
+def test_route_db_with_quotes(monkeypatch):
+    monkeypatch.setattr(router, "ask_llm", lambda prompt: '"db"')
+
+    assert router.route("En çok sipariş veren müşteri kim?") == "db"
+
+
+def test_route_db_with_explanation(monkeypatch):
+    monkeypatch.setattr(
+        router,
+        "ask_llm",
+        lambda prompt: "db\n\nÇünkü soru müşterilerle ilgili.",
+    )
+
+    assert router.route("Kaç müşterimiz var?") == "db"
