@@ -139,7 +139,7 @@ def test_multiple_pdf_upload(client, monkeypatch, tmp_path):
         "rebuild_index",
         fake_rebuild_index,
     )
-
+    monkeypatch.setattr(app_module, "summarize_pdf", lambda path: "Örnek özet.")
     response = client.post(
         "/upload",
         data={

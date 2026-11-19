@@ -151,6 +151,22 @@
             </button>
           </div>
         </form>
+        {% if uploaded_pdfs %}
+        <div class="result-list">
+          <h3>Yüklenen PDF’ler</h3>
+          {% for pdf in uploaded_pdfs %}
+          <article class="result-card">
+            <div class="result-identity">
+              <div class="pdf-icon">PDF</div>
+              <span class="result-name">{{ pdf.name }}</span>
+            </div>
+            <div class="result-content">
+              <p>{{ pdf.summary or "Bu PDF için kayıtlı özet yok." }}</p>
+            </div>
+          </article>
+          {% endfor %}
+        </div>
+        {% endif %}
       </section>
 
       <!-- SEARCH WORKSPACE -->
@@ -244,11 +260,49 @@
             <div class="results-heading">
               <h3>Cevap</h3>
             </div>
+            {% set source_labels = {"db": "Veritabanı", "doc": "Doküman", "web": "Web"} %}
+            {% if answer and route in source_labels %}
+              <span class="source-badge source-badge--{{ route }}">
+                Kaynak: {{ source_labels[route] }}
+              </span>
+            {% endif %}
             <article class="result-card">
               <div class="result-content">
                 <p style="white-space: pre-wrap">{{ answer }}</p>
               </div>
             </article>
+            {% if route == "db" %}
+              {% if sql %}
+                <h4>Çalıştırılan SQL</h4>
+                <pre><code>{{ sql }}</code></pre>
+              {% endif %}
+              {% if columns %}
+                <h4>Sorgu sonuçları</h4>
+                <div style="overflow-x: auto">
+                  <table>
+                    <thead>
+                      <tr>
+                        {% for column in columns %}
+                          <th scope="col">{{ column }}</th>
+                        {% endfor %}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {% for row in rows %}
+                        <tr>
+                          {% for value in row %}
+                            <td>{{ value }}</td>
+                          {% endfor %}
+                        </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+                {% if not rows %}
+                  <p>Sorgu sonuç döndürmedi.</p>
+                {% endif %}
+              {% endif %}
+            {% endif %}
             {% endif %}
             <div class="results-heading">
               <div>
