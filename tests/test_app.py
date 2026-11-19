@@ -62,7 +62,6 @@ def test_answer_and_sources(client, monkeypatch):
         "/",
         data={"question": "Büyük dil modeli nedir?"},
     )
-
     html = response.get_data(as_text=True)
 
     assert response.status_code == 200
@@ -115,7 +114,6 @@ def test_web_answer(client, monkeypatch):
 
 def test_reject_non_pdf(client, monkeypatch, tmp_path):
     monkeypatch.setattr(config, "UPLOAD_DIR", tmp_path)
-
     response = client.post(
         "/upload",
         data={"files": (BytesIO(b"not a pdf"), "image.png")},
@@ -128,7 +126,6 @@ def test_reject_non_pdf(client, monkeypatch, tmp_path):
 
 def test_multiple_pdf_upload(client, monkeypatch, tmp_path):
     monkeypatch.setattr(config, "UPLOAD_DIR", tmp_path)
-
     calls = []
 
     def fake_rebuild_index():
@@ -139,7 +136,7 @@ def test_multiple_pdf_upload(client, monkeypatch, tmp_path):
         "rebuild_index",
         fake_rebuild_index,
     )
-
+    monkeypatch.setattr(app_module, "summarize_pdf", lambda path: "Örnek özet.")
     response = client.post(
         "/upload",
         data={
@@ -157,3 +154,21 @@ def test_multiple_pdf_upload(client, monkeypatch, tmp_path):
     assert (tmp_path / "second.pdf").exists()
     assert calls == ["rebuild"]
     assert "2 PDF" in response.get_data(as_text=True)
+
+
+def test_web_answer_shows_source_link(client, monkeypatch):
+    def fake_answer(question):
+        return {
+            "route": "web",
+            "answer": "Güncel bilgi.",
+            "sources": ["https://example.com/a"],
+        }
+
+    monkeypatch.setattr(app_module, "router_answer", fake_answer)
+
+    response = client.post("/", data={"question": "Güncel bilgi nedir?"})
+    html = response.get_data(as_text=True)
+
+    assert response.status_code == 200
+    assert "Kaynak: Web" in html
+    assert 'href="https://example.com/a" target="_blank" rel="noopener"' in html

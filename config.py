@@ -9,6 +9,7 @@ PDF_DIR = BASE_DIR / "data" / "pdfs"
 UPLOAD_DIR = BASE_DIR / "uploads"
 INDEX_PATH = BASE_DIR / "data" / "index.json"
 DB_PATH = BASE_DIR / "data" / "company.db"
+SUMMARIES_PATH = BASE_DIR / "data" / "summaries.json"
 
 # Embedding model (multilingual, works with Turkish and English PDFs)
 EMBEDDING_MODEL = "paraphrase-multilingual-MiniLM-L12-v2"

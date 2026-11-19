@@ -982,3 +982,15 @@ footer {
     animation: none !important;
   }
 }
+.source-badge {
+  display: inline-block;
+  margin-bottom: .75rem;
+  padding: .35rem .7rem;
+  border-radius: 999px;
+  font-size: .85rem;
+  font-weight: 700;
+}
+
+.source-badge--db  { background: #dcfce7; color: #14532d; }
+.source-badge--doc { background: #dbeafe; color: #1e3a8a; }
+.source-badge--web { background: #f3e8ff; color: #581c87; }
