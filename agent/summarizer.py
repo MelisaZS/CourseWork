@@ -14,8 +14,7 @@ SUMMARY_CHAR_LIMIT = 6_000
 def summarize_pdf(source: str | Path) -> str:
     """Bir PDF yolundan özet üretir veya kayıtlı özeti döndürür."""
     pdf_path = Path(source)
-    with pdf_path.open("rb") as pdf_file:
-        cache_key = hashlib.file_digest(pdf_file, "sha256").hexdigest()
+    cache_key = hashlib.sha256(pdf_path.read_bytes()).hexdigest()
 
     cache_path = config.SUMMARIES_PATH
     summaries = (
@@ -54,14 +53,14 @@ def summarize_pdf(source: str | Path) -> str:
     )
     return summary
 
+
 def get_cached_summary(source: str | Path) -> str | None:
     """Varsa PDF için daha önce üretilmiş özeti döndür."""
     cache_path = config.SUMMARIES_PATH
     if not cache_path.exists():
         return None
 
-    with Path(source).open("rb") as pdf_file:
-        cache_key = hashlib.file_digest(pdf_file, "sha256").hexdigest()
+    cache_key = hashlib.sha256(Path(source).read_bytes()).hexdigest()
 
     summaries = json.loads(cache_path.read_text(encoding="utf-8"))
     return summaries.get(cache_key)
