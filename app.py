@@ -1,11 +1,13 @@
 
+"""Flask web interface for document, database and web Q&A."""
+
 from pathlib import Path
 
 from flask import Flask, redirect, render_template, request, url_for
 from werkzeug.utils import secure_filename
 
 import config
-from rag.answer import answer_from_docs
+from agent.router import answer as router_answer
 from rag.indexer import rebuild_index
 
 app = Flask(__name__)
@@ -17,6 +19,11 @@ def index():
     answer = None
     results = []
     error = None
+    selected_route = None
+    sources = []
+    sql = ""
+    columns = []
+    rows = []
 
     if request.method == "POST":
         question = request.form.get("question", "").strip()
@@ -25,14 +32,22 @@ def index():
             error = "Lütfen bir soru girin."
         else:
             try:
-                result = answer_from_docs(question, include_matches=True)
-                answer = result["answer"]
-                results = result.get("matches", [])
+                response = router_answer(question)
+
+                answer = response.get("answer")
+                results = response.get("matches", [])
+                selected_route = response.get("route")
+                sources = response.get("sources", [])
+                sql = response.get("sql", "")
+                columns = response.get("columns", [])
+                rows = response.get("rows", [])
+
             except Exception:
-                app.logger.exception("PDF cevabı üretilemedi")
-                error = "Cevap üretilemedi. PDF indeksini kontrol edin."
+                app.logger.exception("Soru yönlendirme başarısız")
+                error = "Soru işlenirken bir hata oluştu."
 
     uploaded = request.args.get("uploaded", default=0, type=int)
+
     return render_template(
         "index.html",
         question=question,
@@ -40,6 +55,11 @@ def index():
         results=results,
         error=error,
         uploaded=uploaded,
+        route=selected_route,
+        sources=sources,
+        sql=sql,
+        columns=columns,
+        rows=rows,
     )
 
 
@@ -72,11 +92,15 @@ def upload():
     for file, filename in zip(files, filenames):
         destination = config.UPLOAD_DIR / filename
 
-        # Aynı isimde dosya varsa eskisinin üzerine yazma.
+        # Prevent overwriting files with the same name.
         counter = 1
+
         while destination.exists():
             name = Path(filename)
-            destination = config.UPLOAD_DIR / f"{name.stem}_{counter}{name.suffix}"
+            destination = (
+                config.UPLOAD_DIR
+                / f"{name.stem}_{counter}{name.suffix}"
+            )
             counter += 1
 
         file.save(destination)

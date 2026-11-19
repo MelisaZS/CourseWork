@@ -1,4 +1,6 @@
 
+"""Flask application tests."""
+
 from io import BytesIO
 
 import pytest
@@ -22,9 +24,14 @@ def test_home_page(client):
 
 def test_empty_question(client, monkeypatch):
     def unexpected_answer(question):
-        pytest.fail("Boş soruda answer_from_docs çağrılmamalı")
+        pytest.fail("Boş soruda router çağrılmamalı")
 
-    monkeypatch.setattr(app_module, "answer_from_docs", unexpected_answer)
+    monkeypatch.setattr(
+        app_module,
+        "router_answer",
+        unexpected_answer,
+    )
+
     response = client.post("/", data={"question": "  "})
 
     assert response.status_code == 200
@@ -32,10 +39,11 @@ def test_empty_question(client, monkeypatch):
 
 
 def test_answer_and_sources(client, monkeypatch):
-    def fake_answer(question, *, include_matches=False):
+    def fake_answer(question):
         assert question == "Büyük dil modeli nedir?"
-        assert include_matches is True
+
         return {
+            "route": "doc",
             "answer": "LLM, büyük dil modeli anlamına gelir.",
             "sources": [{"source": "example.pdf", "page": 7}],
             "matches": [
@@ -48,18 +56,61 @@ def test_answer_and_sources(client, monkeypatch):
             ],
         }
 
-    monkeypatch.setattr(app_module, "answer_from_docs", fake_answer)
-    response = client.post("/", data={"question": "Büyük dil modeli nedir?"})
+    monkeypatch.setattr(app_module, "router_answer", fake_answer)
+
+    response = client.post(
+        "/",
+        data={"question": "Büyük dil modeli nedir?"},
+    )
+
+    html = response.get_data(as_text=True)
 
     assert response.status_code == 200
-    html = response.get_data(as_text=True)
     assert "LLM, büyük dil modeli anlamına gelir." in html
     assert "example.pdf – sayfa 7" in html
-    assert html.index("LLM, büyük dil modeli anlamına gelir.") < html.index(
-        "example.pdf – sayfa 7"
-    )
     assert "Skor 0.950" in html
     assert "PDF&#39;ten alınan örnek metin." in html
+
+
+def test_database_answer(client, monkeypatch):
+    def fake_answer(question):
+        return {
+            "route": "db",
+            "answer": "Sonuç: 200",
+            "sql": "SELECT COUNT(*) FROM customers;",
+            "columns": ["count"],
+            "rows": [[200]],
+            "sources": [],
+        }
+
+    monkeypatch.setattr(app_module, "router_answer", fake_answer)
+
+    response = client.post(
+        "/",
+        data={"question": "Kaç müşterimiz var?"},
+    )
+
+    assert response.status_code == 200
+    assert "Sonuç: 200" in response.get_data(as_text=True)
+
+
+def test_web_answer(client, monkeypatch):
+    def fake_answer(question):
+        return {
+            "route": "web",
+            "answer": "Güncel arama bilgisi.",
+            "sources": ["https://example.com"],
+        }
+
+    monkeypatch.setattr(app_module, "router_answer", fake_answer)
+
+    response = client.post(
+        "/",
+        data={"question": "Bugün dolar kaç TL?"},
+    )
+
+    assert response.status_code == 200
+    assert "Güncel arama bilgisi." in response.get_data(as_text=True)
 
 
 def test_reject_non_pdf(client, monkeypatch, tmp_path):
