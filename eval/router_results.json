@@ -1,0 +1,78 @@
+{
+  "model": "llama3.2",
+  "total": 30,
+  "correct": 24,
+  "accuracy": 80.0,
+  "per_route": {
+    "db": {
+      "total": 10,
+      "correct": 7,
+      "accuracy": 70.0
+    },
+    "doc": {
+      "total": 10,
+      "correct": 10,
+      "accuracy": 100.0
+    },
+    "web": {
+      "total": 10,
+      "correct": 7,
+      "accuracy": 70.0
+    }
+  },
+  "confusion": {
+    "db": {
+      "db": 7,
+      "doc": 3,
+      "web": 0
+    },
+    "doc": {
+      "db": 0,
+      "doc": 10,
+      "web": 0
+    },
+    "web": {
+      "db": 0,
+      "doc": 3,
+      "web": 7
+    }
+  },
+  "mistakes": [
+    {
+      "id": 5,
+      "question": "İptal edilen siparişlerin toplam tutarı ne kadar?",
+      "expected": "db",
+      "predicted": "doc"
+    },
+    {
+      "id": 7,
+      "question": "Hiç sipariş vermemiş kaç müşteri var?",
+      "expected": "db",
+      "predicted": "doc"
+    },
+    {
+      "id": 10,
+      "question": "Güncel stok miktarı en düşük 5 ürünü listeler misin?",
+      "expected": "db",
+      "predicted": "doc"
+    },
+    {
+      "id": 23,
+      "question": "Bitcoin şu anda kaç dolar?",
+      "expected": "web",
+      "predicted": "doc"
+    },
+    {
+      "id": 28,
+      "question": "Bu akşam hangi futbol maçları var?",
+      "expected": "web",
+      "predicted": "doc"
+    },
+    {
+      "id": 30,
+      "question": "Son deprem nerede ve kaç büyüklüğünde oldu?",
+      "expected": "web",
+      "predicted": "doc"
+    }
+  ]
+}
