@@ -12,7 +12,11 @@ import config
 @pytest.fixture
 def client():
     app_module.app.config.update(TESTING=True)
-    return app_module.app.test_client()
+    test_client = app_module.app.test_client()
+    # Pages need a login since Week 3; these tests run as an admin user.
+    with test_client.session_transaction() as session:
+        session["user"] = {"id": 1, "username": "admin", "role": "admin"}
+    return test_client
 
 
 def test_home_page(client):
@@ -23,7 +27,7 @@ def test_home_page(client):
 
 
 def test_empty_question(client, monkeypatch):
-    def unexpected_answer(question):
+    def unexpected_answer(question, **kwargs):
         pytest.fail("Boş soruda router çağrılmamalı")
 
     monkeypatch.setattr(
@@ -39,7 +43,7 @@ def test_empty_question(client, monkeypatch):
 
 
 def test_answer_and_sources(client, monkeypatch):
-    def fake_answer(question):
+    def fake_answer(question, **kwargs):
         assert question == "Büyük dil modeli nedir?"
 
         return {
@@ -72,7 +76,7 @@ def test_answer_and_sources(client, monkeypatch):
 
 
 def test_database_answer(client, monkeypatch):
-    def fake_answer(question):
+    def fake_answer(question, **kwargs):
         return {
             "route": "db",
             "answer": "Sonuç: 200",
@@ -94,7 +98,7 @@ def test_database_answer(client, monkeypatch):
 
 
 def test_web_answer(client, monkeypatch):
-    def fake_answer(question):
+    def fake_answer(question, **kwargs):
         return {
             "route": "web",
             "answer": "Güncel arama bilgisi.",
@@ -157,7 +161,7 @@ def test_multiple_pdf_upload(client, monkeypatch, tmp_path):
 
 
 def test_web_answer_shows_source_link(client, monkeypatch):
-    def fake_answer(question):
+    def fake_answer(question, **kwargs):
         return {
             "route": "web",
             "answer": "Güncel bilgi.",

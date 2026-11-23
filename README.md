@@ -36,8 +36,21 @@ A locally running, AI-assisted question answering system. Users can ask question
 pip install -r requirements.txt
 python -m rag.indexer   # builds the document index from data/pdfs
 python db/seed.py       # creates the sample company database
+python -m auth.users demo   # creates demo accounts (admin / calisan / misafir)
 python app.py           # http://127.0.0.1:5000
 ```
+
+### Login and roles
+
+All pages require a login. Create your own account with `python -m auth.users create <username> <role>`.
+
+| Role | Database questions | Documents & web | PDF upload |
+|---|---|---|---|
+| admin | ✓ | ✓ | ✓ |
+| employee | ✓ (personal data masked) | ✓ | ✓ |
+| guest | ✗ | ✓ | ✗ |
+
+Passwords are stored only as bcrypt hashes. Set `SECRET_KEY` in the environment to keep sessions valid after a restart.
 
 Ollama must be installed and running for LLM answers.
 

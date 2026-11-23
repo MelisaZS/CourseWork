@@ -1,5 +1,7 @@
 """Project-wide settings. Every module reads paths and model names from here."""
 
+import os
+import secrets
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -28,3 +30,10 @@ OLLAMA_MODEL = "llama3.2"
 # Web search (DuckDuckGo)
 WEB_MAX_RESULTS = 3
 WEB_REGION = "tr-tr"
+
+# Flask session signing key. Set SECRET_KEY in the environment (.env) to keep users
+# logged in across restarts; otherwise a random key is generated at every start.
+SECRET_KEY = os.environ.get("SECRET_KEY") or secrets.token_hex(32)
+
+# bcrypt cost factor for password hashes (tests lower it to run fast)
+BCRYPT_ROUNDS = 12

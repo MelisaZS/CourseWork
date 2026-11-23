@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Yetkisiz erişim | docmind</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <main class="auth-shell">
+    <section class="panel auth-panel">
+      <h1 class="auth-title">Bu sayfa için yetkiniz yok</h1>
+      <p class="auth-subtitle">
+        {{ user.username }} hesabının rolü ({{ user.role }}) bu işlemi yapmaya izin vermiyor.
+      </p>
+      <a class="primary-btn auth-btn" href="{{ url_for('index') }}">Ana sayfaya dön</a>
+    </section>
+  </main>
+</body>
+</html>

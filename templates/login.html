@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Giriş | docmind</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="ambient ambient-one"></div>
+  <div class="ambient ambient-two"></div>
+
+  <main class="auth-shell">
+    <section class="panel auth-panel">
+      <div class="brand auth-brand">
+        <span class="brand-logo">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M12 2L14.8 9.2L22 12L14.8 14.8L12 22L9.2 14.8L2 12L9.2 9.2Z" fill="currentColor"/>
+          </svg>
+        </span>
+        <span class="brand-name">doc<span>mind</span></span>
+      </div>
+
+      <h1 class="auth-title">Giriş yap</h1>
+      <p class="auth-subtitle">Devam etmek için kullanıcı adı ve şifrenizi girin.</p>
+
+      {% if error %}
+      <div class="alert alert-error" role="alert"><span>!</span>{{ error }}</div>
+      {% endif %}
+
+      <form method="post" action="{{ url_for('login') }}" class="auth-form">
+        <input type="hidden" name="next" value="{{ next or '' }}">
+        <label for="username">Kullanıcı adı</label>
+        <input id="username" name="username" type="text" autocomplete="username"
+               value="{{ username or '' }}" required autofocus>
+        <label for="password">Şifre</label>
+        <input id="password" name="password" type="password" autocomplete="current-password" required>
+        <button type="submit" class="primary-btn auth-btn">Giriş yap</button>
+      </form>
+    </section>
+  </main>
+</body>
+</html>

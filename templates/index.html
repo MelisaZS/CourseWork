@@ -38,6 +38,15 @@
           <span class="status-dot"></span>
           Local Workspace
         </span>
+        {% if current_user %}
+        <div class="user-menu">
+          <span>{{ current_user.username }}</span>
+          <span class="role-badge">{{ current_user.role }}</span>
+          <form method="post" action="{{ url_for('logout') }}">
+            <button type="submit" class="logout-btn">Çıkış</button>
+          </form>
+        </div>
+        {% endif %}
       </div>
     </header>
 
@@ -75,7 +84,8 @@
       </div>
       {% endif %}
 
-      <!-- UPLOAD PANEL -->
+      <!-- UPLOAD PANEL (admin and employee only) -->
+      {% if current_user and current_user.role in ("admin", "employee") %}
       <section class="panel upload-panel">
         <div class="panel-heading">
           <div class="heading-left">
@@ -168,6 +178,7 @@
         </div>
         {% endif %}
       </section>
+      {% endif %}
 
       <!-- SEARCH WORKSPACE -->
       <section class="panel search-panel">

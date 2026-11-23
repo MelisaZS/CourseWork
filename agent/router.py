@@ -61,9 +61,19 @@ def route(question):
     return match.group(1) if match else "doc"
 
 
-def answer(question):
-    """Route the question and return its source-specific answer."""
+ACCESS_DENIED = "Bu soru veritabanı/kaynak erişimi gerektiriyor ve rolünüzün buna yetkisi yok."
+
+
+def answer(question, allowed_routes=None):
+    """Route the question and return its source-specific answer.
+
+    allowed_routes: the sources the user's role may use (None = all). A question
+    routed to a source outside this list is not answered.
+    """
     selected_route = route(question)
+
+    if allowed_routes is not None and selected_route not in allowed_routes:
+        return {"route": selected_route, "answer": ACCESS_DENIED, "sources": [], "denied": True}
 
     if selected_route == "db":
         result = answer_from_db(question)

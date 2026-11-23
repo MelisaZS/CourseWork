@@ -3,18 +3,60 @@
 
 from pathlib import Path
 
-from flask import Flask, redirect, render_template, request, url_for
+from flask import Flask, redirect, render_template, request, session, url_for
 from werkzeug.utils import secure_filename
 
 import config
 from agent.router import answer as router_answer
 from agent.summarizer import get_cached_summary, summarize_pdf
+from auth.decorators import current_user, is_safe_next, login_required, role_required
+from auth.users import UPLOAD_ROLES, allowed_routes, check_login
 from rag.indexer import rebuild_index
 
 app = Flask(__name__)
+app.config.update(
+    SECRET_KEY=config.SECRET_KEY,
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE="Lax",
+)
+
+
+@app.context_processor
+def inject_user():
+    return {"current_user": current_user()}
+
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    next_url = request.values.get("next", "")
+    if request.method == "GET":
+        if current_user():
+            return redirect(url_for("index"))
+        return render_template("login.html", next=next_url)
+
+    username = request.form.get("username", "").strip()
+    user = check_login(username, request.form.get("password", ""))
+    if user is None:
+        return render_template(
+            "login.html",
+            error="Kullanıcı adı veya şifre hatalı.",
+            username=username,
+            next=next_url,
+        ), 401
+
+    session.clear()
+    session["user"] = user
+    return redirect(next_url if is_safe_next(next_url) else url_for("index"))
+
+
+@app.route("/logout", methods=["POST"])
+def logout():
+    session.clear()
+    return redirect(url_for("login"))
 
 
 @app.route("/", methods=["GET", "POST"])
+@login_required
 def index():
     question = ""
     answer = None
@@ -32,7 +74,10 @@ def index():
             error = "Lütfen bir soru girin."
         else:
             try:
-                response = router_answer(question)
+                response = router_answer(
+                    question,
+                    allowed_routes=allowed_routes(current_user()["role"]),
+                )
                 selected_route = response.get("route")
                 answer = response.get("answer")
                 results = response.get("matches") or []
@@ -73,6 +118,7 @@ def index():
 
 
 @app.route("/upload", methods=["POST"])
+@role_required(*UPLOAD_ROLES)
 def upload():
     files = request.files.getlist("files")
 
