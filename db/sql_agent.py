@@ -1,6 +1,6 @@
 """Text-to-SQL: answers natural language questions from the company database.
 
-Flow: question -> prompt (schema + examples) -> LLM -> SQL -> run_query -> answer.
+Flow: question -> prompt (schema + examples) -> LLM -> SQL -> check_sql -> read-only query -> answer.
 
 Result format (shared by the whole project):
     {"answer": str, "sql": str, "columns": [str], "rows": [[value, ...], ...]}
@@ -16,10 +16,8 @@ from pathlib import Path
 
 import config
 from agent.llm import OLLAMA_ERROR, ask_llm
-from db.database import get_connection, run_query
-
-# Tables the LLM is allowed to see. "users" (passwords, roles) is never shown.
-ALLOWED_TABLES = ("customers", "suppliers", "products", "orders")
+from db.database import get_connection
+from db.sql_guard import ALLOWED_TABLES, add_limit, check_sql, run_readonly_query
 
 FEW_SHOT_EXAMPLES = [
     ("Kaç müşterimiz var?",
@@ -39,6 +37,7 @@ FEW_SHOT_EXAMPLES = [
 
 NO_DB_MESSAGE = "Veritabanı bulunamadı. Önce 'python db/seed.py' komutunu çalıştırın."
 NOT_SELECT_MESSAGE = "Sadece veri okuyan (SELECT) sorgular çalıştırılabilir."
+BLOCKED_MESSAGE = "Sorgu güvenlik kontrolünden geçmedi:"
 NO_SQL_MESSAGE = "Bu soru için bir SQL sorgusu üretilemedi. Soruyu farklı şekilde sormayı deneyin."
 
 
@@ -126,8 +125,13 @@ def answer_from_db(question, db_path=None):
     if not is_select(sql):
         return _result(NOT_SELECT_MESSAGE, sql=sql)
 
+    safe, reason = check_sql(sql)
+    if not safe:
+        return _result(f"{BLOCKED_MESSAGE} {reason}", sql=sql)
+    sql = add_limit(sql)
+
     try:
-        result = run_query(sql, db_path=db_path)
+        result = run_readonly_query(sql, db_path=db_path)
     except sqlite3.Error as error:
         return _result(f"Sorgu çalıştırılamadı: {error}", sql=sql)
 

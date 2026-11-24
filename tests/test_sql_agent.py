@@ -2,6 +2,7 @@ import pytest
 
 import db.sql_agent as sql_agent
 from agent.llm import OLLAMA_ERROR
+from db.database import run_query
 from db.seed import seed_database
 from db.sql_agent import answer_from_db, build_sql_prompt, extract_sql, get_schema_text
 
@@ -77,7 +78,8 @@ def test_answer_top_customers(seeded_db, monkeypatch):
 def test_invalid_sql_does_not_crash(seeded_db, monkeypatch):
     monkeypatch.setattr(sql_agent, "ask_llm", fake_llm("SELECT * FROM olmayan_tablo;"))
     result = answer_from_db("Bir şey sor", db_path=seeded_db)
-    assert result["answer"].startswith("Sorgu çalıştırılamadı")
+    assert result["answer"].startswith(sql_agent.BLOCKED_MESSAGE)
+    assert "olmayan_tablo" in result["answer"]
     assert result["rows"] == []
 
 
@@ -85,7 +87,7 @@ def test_non_select_is_rejected(seeded_db, monkeypatch):
     monkeypatch.setattr(sql_agent, "ask_llm", fake_llm("DELETE FROM customers;"))
     result = answer_from_db("Müşterileri sil", db_path=seeded_db)
     assert result["answer"] in (sql_agent.NO_SQL_MESSAGE, sql_agent.NOT_SELECT_MESSAGE)
-    count = sql_agent.run_query("SELECT COUNT(*) FROM customers", db_path=seeded_db)["rows"][0][0]
+    count = run_query("SELECT COUNT(*) FROM customers", db_path=seeded_db)["rows"][0][0]
     assert count == 200
 
 
