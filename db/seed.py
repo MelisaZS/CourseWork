@@ -23,6 +23,7 @@ from faker import Faker
 
 import config
 from db.database import get_connection, init_db
+from db.privacy_migration import encrypt_customer_fields
 
 SEED = 42
 NUM_CUSTOMERS = 200
@@ -265,11 +266,23 @@ def seed_database(db_path=None, seed=SEED):
         conn.close()
 
 
+
 def main():
     counts = seed_database()
+
+    # Encrypt personal fields after generating sample data.
+    encrypted_count = encrypt_customer_fields()
+
     print(f"Company database ready: {config.DB_PATH}")
+
     for table, count in counts.items():
         print(f"  {table:<10} {count}")
+
+    print(f"Encrypted customer records: {encrypted_count}")
+
+
+if __name__ == "__main__":
+    main()
 
 
 if __name__ == "__main__":
