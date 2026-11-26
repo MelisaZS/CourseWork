@@ -4,6 +4,7 @@
 from cryptography.fernet import Fernet
 
 from auth.privacy import decrypt, encrypt, protect_response
+from db import seed
 from db.database import get_connection
 from db.privacy_migration import encrypt_customer_fields
 from db.seed import seed_database
@@ -162,3 +163,26 @@ def test_invalid_role_is_rejected():
         pass
     else:
         raise AssertionError("Unknown role should be rejected")
+
+
+def test_seed_main_without_fernet_key(tmp_path, monkeypatch, capsys):
+    monkeypatch.delenv("FERNET_KEY", raising=False)
+    monkeypatch.setattr(
+        "auth.privacy.load_dotenv",
+        lambda **kwargs: None,
+    )
+    monkeypatch.setattr(
+        "config.DB_PATH",
+        tmp_path / "company.db",
+    )
+
+    seed.main()
+
+    output = capsys.readouterr().out
+
+    assert (
+        "FERNET_KEY bulunamadı, kişisel alanlar şifrelenmedi. "
+        ".env.example dosyasına bakın."
+    ) in output
+
+    assert (tmp_path / "company.db").exists()
