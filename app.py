@@ -7,8 +7,10 @@ from flask import Flask, redirect, render_template, request, session, url_for
 from werkzeug.utils import secure_filename
 
 import config
+from agent.prompt_guard import is_suspicious
 from agent.router import answer as router_answer
 from agent.summarizer import get_cached_summary, summarize_pdf
+from auth.audit import log_event
 from auth.decorators import current_user, is_safe_next, login_required, role_required
 from auth.privacy import protect_response
 from auth.users import UPLOAD_ROLES, allowed_routes, check_login
@@ -40,6 +42,7 @@ def login():
     user = check_login(username, request.form.get("password", ""))
 
     if user is None:
+        log_event(username or None, "login_failed", {"result": "denied"})
         return render_template(
             "login.html",
             error="Kullanıcı adı veya şifre hatalı.",
@@ -49,6 +52,7 @@ def login():
 
     session.clear()
     session["user"] = user
+    log_event(user, "login_success", {"result": "success"})
 
     return redirect(
         next_url if is_safe_next(next_url) else url_for("index")
@@ -57,6 +61,10 @@ def login():
 
 @app.route("/logout", methods=["POST"])
 def logout():
+    user = current_user()
+    if user:
+        log_event(user, "logout", {"result": "success"})
+
     session.clear()
     return redirect(url_for("login"))
 
@@ -79,6 +87,16 @@ def index():
 
         if not question:
             error = "Lütfen bir soru girin."
+        elif is_suspicious(question):
+            log_event(
+                current_user(),
+                "prompt_rejected",
+                {"reason": "prompt_injection", "result": "denied"},
+            )
+            error = (
+                "Sorunuz güvenlik kontrolü tarafından reddedildi. "
+                "Lütfen sorunuzu yeniden düzenleyin."
+            )
         else:
             try:
                 user_role = current_user()["role"]
@@ -93,7 +111,18 @@ def index():
                     response,
                     user_role,
                 )
-
+                log_event(
+                    current_user(),
+                    "question",
+                    {
+                        "route": response.get("route"),
+                        "result": (
+                            "denied"
+                            if response.get("denied")
+                            else "success"
+                        ),
+                    },
+                )
                 selected_route = response.get("route")
                 answer = response.get("answer")
                 results = response.get("matches") or []
@@ -148,6 +177,11 @@ def upload():
     files = request.files.getlist("files")
 
     if not files or any(not f.filename for f in files):
+        log_event(
+            current_user(),
+            "upload_failed",
+            {"result": "denied", "reason": "no_file_selected"},
+        )
         return render_template(
             "index.html",
             question="",
@@ -165,6 +199,11 @@ def upload():
         not name.lower().endswith(".pdf")
         for name in filenames
     ):
+        log_event(
+            current_user(),
+            "upload_failed",
+            {"result": "denied", "reason": "invalid_file_type"},
+        )
         return render_template(
             "index.html",
             question="",
@@ -199,7 +238,11 @@ def upload():
         rebuild_index()
     except Exception:
         app.logger.exception("PDF index güncellenemedi")
-
+        log_event(
+            current_user(),
+            "upload_failed",
+            {"result": "error", "reason": "index_failed"},
+        )
         return render_template(
             "index.html",
             question="",
@@ -216,7 +259,11 @@ def upload():
                 "PDF özeti oluşturulamadı: %s",
                 path.name,
             )
-
+    log_event(
+        current_user(),
+        "upload_success",
+        {"result": "success", "file_count": len(saved_paths)},
+    )
     return redirect(
         url_for("index", uploaded=len(files))
     )
