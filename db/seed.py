@@ -1,3 +1,4 @@
+
 """Fills the company database with realistic Turkish sample data.
 
 Creates 200 customers, 50 products, 20 suppliers and 400 orders with
@@ -23,6 +24,7 @@ from faker import Faker
 
 import config
 from db.database import get_connection, init_db
+from db.privacy_migration import encrypt_customer_fields
 
 SEED = 42
 NUM_CUSTOMERS = 200
@@ -267,9 +269,23 @@ def seed_database(db_path=None, seed=SEED):
 
 def main():
     counts = seed_database()
+
+    # Encrypt personal fields after generating sample data.
+    try:
+        encrypted_count = encrypt_customer_fields()
+    except RuntimeError:
+        encrypted_count = None
+        print(
+            "FERNET_KEY bulunamadı, kişisel alanlar şifrelenmedi. .env.example dosyasına bakın."
+        )
+
     print(f"Company database ready: {config.DB_PATH}")
+
     for table, count in counts.items():
         print(f"  {table:<10} {count}")
+
+    if encrypted_count is not None:
+        print(f"Encrypted customer records: {encrypted_count}")
 
 
 if __name__ == "__main__":

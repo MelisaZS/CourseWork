@@ -1,3 +1,4 @@
+
 # PDF AI Query – Standards Project
 
 Term project for **Software Development with Standards** (İstanbul Kültür University, Fall 2026).
@@ -35,6 +36,7 @@ A locally running, AI-assisted question answering system. Users can ask question
 ```bash
 pip install -r requirements.txt
 python -m rag.indexer   # builds the document index from data/pdfs
+cp .env.example .env    # then put a Fernet key into FERNET_KEY (see the file)
 python db/seed.py       # creates the sample company database
 python -m auth.users demo   # creates demo accounts (admin / calisan / misafir)
 python app.py           # http://127.0.0.1:5000
@@ -53,6 +55,8 @@ All pages require a login. Create your own account with `python -m auth.users cr
 Passwords are stored only as bcrypt hashes. Set `SECRET_KEY` in the environment to keep sessions valid after a restart.
 
 Ollama must be installed and running for LLM answers.
+
+Customer phone and TC numbers are stored encrypted (Fernet); admins see them decrypted, other roles see masked values.
 
 ## Project Structure
 
