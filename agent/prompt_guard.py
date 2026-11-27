@@ -1,4 +1,3 @@
-
 """Turkish and English prompt injection detection."""
 
 import re
@@ -10,6 +9,12 @@ SUSPICIOUS_PATTERNS = [
     r"\b(disregard|forget)\s+(all\s+)?(previous|prior|above)\s+(instructions|rules)\b",
     r"\b(onceki|onceki tum|yukaridaki)\s+(talimatlari|kurallari|komutlari)\s+(unut|yok say|gormezden gel)\b",
 
+    # Additional instruction override patterns
+    r"\b(talimatlari|kurallari|komutlari)\s+(unut|yok say|gormezden gel)\b",
+    r"\bignore\s+((all|the)\s+)?(instructions|rules|prompts)\b",
+    r"\bforget\s+everything\s+above\b",
+    r"\bdisregard\s+everything\s+you\s+were\s+told\b",
+
     # System prompt disclosure
     r"\b(reveal|show|print|display)\s+(your\s+)?(system|developer|hidden)\s+(prompt|instructions|message)\b",
     r"\b(sistem|gizli|gelistirici)\s+(promptunu|talimatlarini|mesajini)\s+(goster|acikla|paylas)\b",
@@ -19,6 +24,8 @@ SUSPICIOUS_PATTERNS = [
     r"\b(artik|simdi)\s+(sistem|yonetici|admin)\s+(rolundesin|olarak davran)\b",
     r"\b(system|developer)\s+override\b",
     r"\b(jailbreak|developer mode|dan mode)\b",
+    r"\byou\s+are\s+now\s+(dan|in\s+developer\s+mode)\b",
+    r"\b(yonetici|admin)\s+gibi\s+davran\b",
 
     # Security bypass
     r"\b(bypass|disable|remove)\s+(all\s+)?(security|safety|restrictions|filters)\b",
