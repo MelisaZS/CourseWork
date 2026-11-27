@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin paneli | docmind</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+  <style>
+    .admin-main { padding: 34px 0 60px; position: relative; z-index: 1; }
+    .admin-title h1 { font-family: "Manrope", sans-serif; font-size: 32px; letter-spacing: -1px; margin: 10px 0 6px; }
+    .admin-title p { color: var(--muted); margin: 0 0 26px; font-size: 14px; }
+
+    .stat-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin-bottom: 22px; }
+    .stat-tile { padding: 20px 22px; }
+    .stat-label { color: var(--muted); font-size: 12px; font-weight: 700; letter-spacing: .4px; }
+    .stat-value { font-family: "Manrope", sans-serif; font-size: 34px; font-weight: 800; letter-spacing: -1px; margin-top: 6px; }
+    .stat-note { color: var(--muted); font-size: 12px; margin-top: 2px; }
+
+    .admin-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 22px; margin-bottom: 22px; }
+    .admin-panel { padding: 26px 28px; margin-bottom: 22px; }
+    .admin-grid .admin-panel { margin-bottom: 0; }
+    .admin-panel h2 { font-family: "Manrope", sans-serif; font-size: 19px; letter-spacing: -.5px; margin: 0 0 4px; }
+    .admin-panel .panel-note { color: var(--muted); font-size: 13px; margin: 0 0 18px; }
+    .empty-note { color: var(--muted); font-size: 14px; padding: 18px 0 4px; }
+
+    /* daily question bars: one series, bars grow from the left baseline */
+    .day-bars { list-style: none; margin: 0; padding: 0; }
+    .day-bars li { display: grid; grid-template-columns: 96px minmax(0, 1fr) 132px; align-items: center; gap: 12px; padding: 7px 0; }
+    .day-label { font-size: 13px; font-weight: 600; }
+    .day-track { height: 12px; border-left: 1px solid var(--border); }
+    .day-bar { height: 12px; background: var(--primary); border-radius: 0 4px 4px 0; }
+    .day-value { font-size: 13px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+
+    .admin-table-wrap { overflow-x: auto; }
+    .admin-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .admin-table th { text-align: left; color: var(--muted); font-size: 11px; letter-spacing: .6px; text-transform: uppercase;
+                      font-weight: 700; padding: 0 12px 10px 0; border-bottom: 1px solid var(--border); white-space: nowrap; }
+    .admin-table td { padding: 10px 12px 10px 0; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .admin-table tr:last-child td { border-bottom: none; }
+    .admin-table .nowrap { white-space: nowrap; }
+    .admin-table .muted { color: var(--muted); }
+
+    .result-badge { display: inline-block; padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; white-space: nowrap; }
+    .result-success { background: #dcfce7; color: #14532d; }
+    .result-denied { background: #fee2e2; color: #7f1d1d; }
+    .result-error { background: #fef3c7; color: #78350f; }
+    .result-none { background: #f1f3f9; color: #4b5568; }
+
+    .nav-link { border: 1px solid var(--border); background: white; border-radius: 9px; padding: 7px 12px;
+                font-weight: 700; font-size: 12px; color: inherit; text-decoration: none; }
+
+    @media (max-width: 1100px) {
+      .stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .admin-grid { grid-template-columns: minmax(0, 1fr); }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="ambient ambient-one"></div>
+  <div class="ambient ambient-two"></div>
+
+  {% set role_names = {"admin": "Admin", "employee": "Çalışan", "guest": "Misafir"} %}
+
+  <div class="app-shell">
+    <header class="navbar">
+      <a class="brand" href="{{ url_for('index') }}">
+        <span class="brand-logo">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M12 2L14.8 9.2L22 12L14.8 14.8L12 22L9.2 14.8L2 12L9.2 9.2Z" fill="currentColor"/>
+          </svg>
+        </span>
+        <span class="brand-name">doc<span>mind</span></span>
+        <span class="brand-version">ADMIN</span>
+      </a>
+
+      <div class="nav-right">
+        <a class="nav-link" href="{{ url_for('index') }}">Ana sayfa</a>
+        {% if current_user %}
+        <div class="user-menu">
+          <span>{{ current_user.username }}</span>
+          <span class="role-badge">{{ current_user.role }}</span>
+          <form method="post" action="{{ url_for('logout') }}">
+            <button type="submit" class="logout-btn">Çıkış</button>
+          </form>
+        </div>
+        {% endif %}
+      </div>
+    </header>
+
+    <main class="admin-main">
+      <section class="admin-title">
+        <div class="eyebrow"><span class="eyebrow-icon">✦</span> GÜVENLİK PANELİ</div>
+        <h1>Admin paneli</h1>
+        <p>Audit kayıtları, reddedilen istekler, kullanıcılar ve günlük soru sayısı. Saatler bu bilgisayarın saatine göredir.</p>
+      </section>
+
+      <section class="stat-grid" aria-label="Özet">
+        <div class="panel stat-tile">
+          <div class="stat-label">Bugün sorulan soru</div>
+          <div class="stat-value" id="stat-questions-today">{{ stats.questions_today }}</div>
+          <div class="stat-note">engellenenler dahil</div>
+        </div>
+        <div class="panel stat-tile">
+          <div class="stat-label">Son 24 saatte reddedilen istek</div>
+          <div class="stat-value" id="stat-denied-24h">{{ stats.denied_24h }}</div>
+          <div class="stat-note">hatalı giriş, engellenen soru, yetkisiz istek</div>
+        </div>
+        <div class="panel stat-tile">
+          <div class="stat-label">Kullanıcı</div>
+          <div class="stat-value" id="stat-users">{{ stats.user_count }}</div>
+          <div class="stat-note">
+            {{ stats.role_counts.admin }} admin · {{ stats.role_counts.employee }} çalışan · {{ stats.role_counts.guest }} misafir
+          </div>
+        </div>
+        <div class="panel stat-tile">
+          <div class="stat-label">Toplam audit kaydı</div>
+          <div class="stat-value" id="stat-audit-total">{{ stats.audit_total }}</div>
+          <div class="stat-note">giriş, soru, yükleme ve reddedilen istekler</div>
+        </div>
+      </section>
+
+      <div class="admin-grid">
+        <section class="panel admin-panel" id="daily-questions">
+          <h2>Günlük soru sayısı</h2>
+          <p class="panel-note">Son {{ daily_days }} gün · engellenen ve yetkisiz sorular dahil</p>
+          {% if daily | sum(attribute="total") == 0 %}
+          <p class="empty-note">Son {{ daily_days }} günde soru sorulmamış.</p>
+          {% endif %}
+          <ol class="day-bars">
+            {% for day in daily %}
+            <li class="day-row" title="{{ day.label }}: {{ day.total }} soru{% if day.denied %}, {{ day.denied }} reddedildi{% endif %}">
+              <span class="day-label">{{ day.label }}</span>
+              <span class="day-track"><span class="day-bar" style="display:block; width: {{ day.percent }}%"></span></span>
+              <span class="day-value">
+                {{ day.total }}
+                {% if day.denied %}<span class="result-badge result-denied">{{ day.denied }} reddedildi</span>{% endif %}
+              </span>
+            </li>
+            {% endfor %}
+          </ol>
+        </section>
+
+        <section class="panel admin-panel" id="users">
+          <h2>Kullanıcılar ve roller</h2>
+          <p class="panel-note">Şifreler gösterilmez, veritabanında yalnızca bcrypt hash'leri tutulur.</p>
+          {% if users %}
+          <div class="admin-table-wrap">
+            <table class="admin-table">
+              <thead>
+                <tr><th scope="col">Kullanıcı</th><th scope="col">Rol</th><th scope="col">Oluşturulma</th><th scope="col">Son giriş</th></tr>
+              </thead>
+              <tbody>
+                {% for user in users %}
+                <tr class="user-row">
+                  <td><strong>{{ user.username }}</strong></td>
+                  <td><span class="role-badge">{{ role_names.get(user.role, user.role) }}</span></td>
+                  <td class="nowrap muted">{{ user.created }}</td>
+                  <td class="nowrap muted">{{ user.last_login }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <p class="empty-note">Henüz kullanıcı yok. Demo hesapları için: <code>python -m auth.users demo</code></p>
+          {% endif %}
+        </section>
+      </div>
+
+      <section class="panel admin-panel" id="denied-requests">
+        <h2>Reddedilen istekler</h2>
+        <p class="panel-note">Son {{ recent_limit }} · hatalı girişler, prompt injection, rolün izin vermediği sorular ve reddedilen yüklemeler</p>
+        {% if denied %}
+        <div class="admin-table-wrap">
+          <table class="admin-table">
+            <thead>
+              <tr><th scope="col">Zaman</th><th scope="col">Kullanıcı</th><th scope="col">İşlem</th><th scope="col">Ayrıntı</th></tr>
+            </thead>
+            <tbody>
+              {% for event in denied %}
+              <tr class="denied-row">
+                <td class="nowrap muted">{{ event.time }}</td>
+                <td>{{ event.username }}</td>
+                <td class="nowrap">{{ event.action_label }}</td>
+                <td>{{ event.info or "-" }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <p class="empty-note">Reddedilen istek yok.</p>
+        {% endif %}
+      </section>
+
+      <section class="panel admin-panel" id="audit-log">
+        <h2>Son {{ recent_limit }} audit kaydı</h2>
+        <p class="panel-note">En yeni kayıt en üstte</p>
+        {% if events %}
+        <div class="admin-table-wrap">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th scope="col">#</th><th scope="col">Zaman</th><th scope="col">Kullanıcı</th>
+                <th scope="col">İşlem</th><th scope="col">Sonuç</th><th scope="col">Ayrıntı</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for event in events %}
+              <tr class="audit-row">
+                <td class="muted">{{ event.id }}</td>
+                <td class="nowrap muted">{{ event.time }}</td>
+                <td>{{ event.username }}</td>
+                <td class="nowrap">{{ event.action_label }}</td>
+                <td><span class="result-badge result-{{ event.result if event.result in ('success', 'denied', 'error') else 'none' }}">{{ event.result_label }}</span></td>
+                <td>{{ event.info or "-" }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <p class="empty-note">Henüz audit kaydı yok.</p>
+        {% endif %}
+      </section>
+    </main>
+  </div>
+</body>
+</html>

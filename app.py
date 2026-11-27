@@ -10,6 +10,7 @@ import config
 from agent.prompt_guard import is_suspicious
 from agent.router import answer as router_answer
 from agent.summarizer import get_cached_summary, summarize_pdf
+from auth.admin import admin_dashboard
 from auth.audit import log_event
 from auth.decorators import current_user, is_safe_next, login_required, role_required
 from auth.privacy import protect_response
@@ -267,6 +268,13 @@ def upload():
     return redirect(
         url_for("index", uploaded=len(files))
     )
+
+
+@app.route("/admin")
+@role_required("admin")
+def admin():
+    """Security panel: audit log, rejected requests, users and daily question counts."""
+    return render_template("admin.html", **admin_dashboard())
 
 
 if __name__ == "__main__":
