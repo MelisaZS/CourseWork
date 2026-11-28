@@ -1,4 +1,3 @@
-
 """Flask application tests."""
 
 from io import BytesIO
@@ -176,3 +175,28 @@ def test_web_answer_shows_source_link(client, monkeypatch):
     assert response.status_code == 200
     assert "Kaynak: Web" in html
     assert 'href="https://example.com/a" target="_blank" rel="noopener"' in html
+
+
+def test_database_answer_hides_empty_search_results(client, monkeypatch):
+    def fake_answer(question, **kwargs):
+        return {
+            "route": "db",
+            "answer": "Toplam 200 müşteri bulunmaktadır.",
+            "sql": "SELECT COUNT(*) FROM customers;",
+            "columns": ["count"],
+            "rows": [[200]],
+            "sources": [],
+        }
+
+    monkeypatch.setattr(app_module, "router_answer", fake_answer)
+
+    response = client.post(
+        "/",
+        data={"question": "Toplam kaç müşterimiz var?"},
+    )
+    html = response.get_data(as_text=True)
+
+    assert response.status_code == 200
+    assert "Kaynak: Veritabanı" in html
+    assert "SELECT COUNT(*) FROM customers;" in html
+    assert "SEARCH RESULTS" not in html
